@@ -1,3 +1,19 @@
+# Tenstorrent Finance Dashboard
+
+## Quick Deploy to Render (One Click)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/mgollapudi-cmd/tenstorrent-finance-dashboard)
+
+**Or manually:**
+1. Go to [dashboard.render.com](https://dashboard.render.com)
+2. Click "New" → "Web Service"  
+3. Connect GitHub and select `tenstorrent-finance-dashboard`
+4. It auto-detects Node.js - just click "Create Web Service"
+5. Wait ~2 minutes for deploy
+6. Your URL will be: `https://tenstorrent-finance-dashboard.onrender.com/finance`
+
+---
+
 # 🧠 Tenstorrent AI Lead Detection Platform
 
 An intelligent lead detection platform that monitors Reddit and HackerNews for AI hardware discussions, automatically identifies potential sales opportunities, and generates contextual AI responses using OpenAI GPT-4.
