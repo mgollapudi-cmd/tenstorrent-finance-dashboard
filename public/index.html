@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tenstorrent AI Lead Detection Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">T</div>
+                <div>
+                    <h1 style="font-size: 20px; margin-bottom: 2px;">Tenstorrent</h1>
+                    <p style="font-size: 12px; color: var(--text-secondary);">
+                        AI Lead Detection Platform
+                        <span class="last-login">Last login: <span id="lastLogin">Loading...</span></span>
+                    </p>
+                </div>
+            </div>
+            <div class="header-controls">
+                <div class="unified-search-container">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="unifiedSearchInput" class="unified-search-input" placeholder="Search for tinygrad, NVIDIA alternatives, AI hardware...">
+                    <button id="clearSearchBtn" class="clear-search-btn" title="Clear search">✕</button>
+                    <div class="search-filters">
+                        <select id="quickPlatformFilter" class="quick-filter">
+                            <option value="all">All Platforms</option>
+                            <option value="Reddit">Reddit</option>
+                            <option value="HackerNews">HackerNews</option>
+                            <option value="LinkedIn">LinkedIn</option>
+                            <option value="Twitter">Twitter/X</option>
+                        </select>
+                        <select id="quickPriorityFilter" class="quick-filter">
+                            <option value="all">All Priorities</option>
+                            <option value="highest">Highest</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="scanBtn" class="btn btn-primary">
+                    <span class="btn-icon">🔄</span>
+                    Manual Scan
+                </button>
+                <button id="aiScoreBtn" class="btn btn-ai">
+                    <span class="btn-icon">🤖</span>
+                    AI Lead Scoring
+                </button>
+                <button id="chatbotBtn" class="btn btn-chat">
+                    <span class="btn-icon">💬</span>
+                    AI Assistant
+                </button>
+                <button id="exportBtn" class="btn btn-secondary">
+                    <span class="btn-icon">📥</span>
+                    Export
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+
+        <!-- Tabbed Interface -->
+        <div class="glass tab-container">
+            <div class="tab-header">
+                <button class="tab-btn active" data-tab="signals">
+                    <span class="tab-icon">📡</span>
+                    Signals
+                    <span class="tab-count" id="signalsTabCount">0</span>
+                </button>
+                <button class="tab-btn" data-tab="leads">
+                    <span class="tab-icon">👥</span>
+                    Leads
+                    <span class="tab-count" id="leadsTabCount">0</span>
+                </button>
+                <button class="tab-btn" data-tab="analytics">
+                    <span class="tab-icon">📊</span>
+                    Analytics
+                    <span class="tab-count" id="analyticsTabCount">0</span>
+                </button>
+            </div>
+
+            <!-- Signals Tab -->
+            <div class="tab-content active" id="signalsTab">
+                <div class="panel-header">
+                    <h2 class="panel-title">
+                        <span class="live-indicator"></span>
+                        Live Signals & AI Responses
+                    </h2>
+                    <div class="panel-stats">
+                        <div class="stat-item">
+                            <span class="stat-number" id="filteredSignals">0</span>
+                            <span class="stat-label">Showing Results</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="totalSignals">0</span>
+                            <span class="stat-label">Total Signals</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="highestPriorityCount">0</span>
+                            <span class="stat-label">Highest Priority</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="responsesGenerated">0</span>
+                            <span class="stat-label">Responses Ready</span>
+                        </div>
+                    </div>
+                    <div class="panel-filters">
+                        <select id="priorityFilter" class="filter-select">
+                            <option value="all">All Priorities</option>
+                            <option value="highest">Highest</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                        </select>
+                        <select id="platformFilter" class="filter-select">
+                            <option value="all">All Platforms</option>
+                            <option value="Reddit">Reddit</option>
+                            <option value="HackerNews">HackerNews</option>
+                            <option value="LinkedIn">LinkedIn</option>
+                            <option value="Twitter">Twitter/X</option>
+                        </select>
+                        <select id="statusFilter" class="filter-select">
+                            <option value="all">All Status</option>
+                            <option value="new">New</option>
+                            <option value="responded">Responded</option>
+                            <option value="contacted">Contacted</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="signalsContainer" class="signals-container">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p>Loading sales opportunities...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leads Tab -->
+            <div class="tab-content" id="leadsTab">
+                <div class="panel-header">
+                    <h2 class="panel-title">
+                        <span class="tab-icon">👥</span>
+                        Lead Management Dashboard
+                    </h2>
+                    <div class="leads-stats">
+                        <div class="stat-item">
+                            <span class="stat-number" id="totalLeads">0</span>
+                            <span class="stat-label">Total Leads</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="hotLeads">0</span>
+                            <span class="stat-label">Hot Leads</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="convertedLeads">0</span>
+                            <span class="stat-label">Converted</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="responseRate">0%</span>
+                            <span class="stat-label">Response Rate</span>
+                        </div>
+                    </div>
+                    <div class="leads-actions">
+                        <button id="addLeadBtn" class="btn btn-primary">
+                            <span class="btn-icon">➕</span>
+                            Add Lead
+                        </button>
+                        <button id="exportLeadsBtn" class="btn btn-secondary">
+                            <span class="btn-icon">📥</span>
+                            Export Leads
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="leads-pipeline">
+                    <div class="pipeline-stage">
+                        <h3 class="stage-title">New Leads <span class="stage-count" id="newLeadsCount">0</span></h3>
+                        <div class="leads-column" id="newLeadsColumn">
+                            <div class="empty-stage">No new leads</div>
+                        </div>
+                    </div>
+                    <div class="pipeline-stage">
+                        <h3 class="stage-title">Contacted <span class="stage-count" id="contactedLeadsCount">0</span></h3>
+                        <div class="leads-column" id="contactedLeadsColumn">
+                            <div class="empty-stage">No contacted leads</div>
+                        </div>
+                    </div>
+                    <div class="pipeline-stage">
+                        <h3 class="stage-title">In Discussion <span class="stage-count" id="discussionLeadsCount">0</span></h3>
+                        <div class="leads-column" id="discussionLeadsColumn">
+                            <div class="empty-stage">No leads in discussion</div>
+                        </div>
+                    </div>
+                    <div class="pipeline-stage">
+                        <h3 class="stage-title">Qualified <span class="stage-count" id="qualifiedLeadsCount">0</span></h3>
+                        <div class="leads-column" id="qualifiedLeadsColumn">
+                            <div class="empty-stage">No qualified leads</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div class="tab-content" id="analyticsTab">
+                <div class="panel-header">
+                    <h2 class="panel-title">
+                        <span class="tab-icon">📊</span>
+                        Analytics & Performance
+                    </h2>
+                </div>
+                
+                <div class="analytics-grid">
+                    <div class="analytics-card glass">
+                        <h3>Signal Sources</h3>
+                        <div class="chart-container" id="sourceChart">
+                            <div class="chart-placeholder">📈 Signal source distribution will appear here</div>
+                        </div>
+                    </div>
+                    <div class="analytics-card glass">
+                        <h3>Priority Distribution</h3>
+                        <div class="chart-container" id="priorityChart">
+                            <div class="chart-placeholder">🎯 Priority breakdown will appear here</div>
+                        </div>
+                    </div>
+                    <div class="analytics-card glass">
+                        <h3>Response Performance</h3>
+                        <div class="chart-container" id="performanceChart">
+                            <div class="chart-placeholder">⚡ Response metrics will appear here</div>
+                        </div>
+                    </div>
+                    <div class="analytics-card glass">
+                        <h3>Conversion Funnel</h3>
+                        <div class="chart-container" id="funnelChart">
+                            <div class="chart-placeholder">🔄 Conversion funnel will appear here</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Signal Detail Modal -->
+    <div id="signalModal" class="modal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">Signal Details & AI Response</h3>
+                <button class="close-btn" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Content will be populated dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="markContactedBtn">
+                    <span class="btn-icon">✓</span>
+                    Mark as Contacted
+                </button>
+                <button class="btn btn-primary" id="generateResponseBtn">
+                    <span class="btn-icon">🤖</span>
+                    Generate AI Response
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Chatbot Modal -->
+    <div id="chatbotModal" class="modal">
+        <div class="modal-content chatbot-modal">
+            <div class="modal-header">
+                <h3>🤖 AI Sales Assistant</h3>
+                <span class="close" id="closeChatbot">&times;</span>
+            </div>
+            <div class="chatbot-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message assistant">
+                        <div class="message-avatar">🤖</div>
+                        <div class="message-content">
+                            <p>Hi! I'm your AI Sales Assistant. I can help you with:</p>
+                            <ul>
+                                <li>🔍 <strong>"Show me LinkedIn signals"</strong> - Find LinkedIn leads</li>
+                                <li>🐦 <strong>"Get Twitter mentions of tinygrad"</strong> - Search X/Twitter</li>
+                                <li>📊 <strong>"Score all leads"</strong> - AI lead scoring</li>
+                                <li>🎯 <strong>"Find high-priority prospects"</strong> - Filter by urgency</li>
+                                <li>💰 <strong>"Show budget-conscious leads"</strong> - Find cost-sensitive prospects</li>
+                                <li>🏢 <strong>"Find decision makers"</strong> - CTOs, VPs, Directors</li>
+                            </ul>
+                            <p>What would you like me to help you with?</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" id="chatInput" class="chat-input" placeholder="Ask me anything about leads, signals, or prospects..." />
+                    <button id="chatSend" class="chat-send-btn">
+                        <span>🚀</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

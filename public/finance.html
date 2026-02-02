@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AP Finance Dashboard - Tenstorrent</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --purple: #8b5cf6;
+            --pink: #ec4899;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-card-hover: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-dark) 100%);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1920px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--success) 0%, var(--primary) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .logo h1 { font-size: 18px; font-weight: 600; }
+        .logo p { font-size: 11px; color: var(--text-secondary); }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); }
+        .btn-secondary:hover { background: var(--bg-card-hover); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+
+        .refresh-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            padding: 6px 10px;
+            background: var(--bg-card);
+            border-radius: 6px;
+        }
+
+        .refresh-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* Container */
+        .container {
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* KPI Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 16px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+        }
+
+        .kpi-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .kpi-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 2px;
+            font-feature-settings: "tnum";
+        }
+
+        .kpi-value.positive { color: var(--success); }
+        .kpi-value.negative { color: var(--danger); }
+        .kpi-value.warning { color: var(--warning); }
+        .kpi-value.info { color: var(--info); }
+        .kpi-value.purple { color: var(--purple); }
+
+        .kpi-subtext {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .card.full-width { grid-column: 1 / -1; }
+
+        .card-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-body { padding: 16px; }
+
+        /* Category Chart */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .category-item {
+            background: var(--bg-dark);
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .category-item:hover {
+            border-color: var(--primary);
+            background: var(--bg-card-hover);
+        }
+
+        .category-item.active {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .category-name {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .category-amount {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .category-count {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        /* Aging Bars */
+        .aging-bars { display: flex; flex-direction: column; gap: 8px; }
+
+        .aging-bar-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 6px 8px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .aging-bar-item:hover { background: var(--bg-card-hover); }
+
+        .aging-label { width: 80px; font-size: 12px; color: var(--text-secondary); }
+
+        .aging-bar-container {
+            flex: 1;
+            height: 20px;
+            background: var(--bg-dark);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .aging-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .aging-bar.current { background: var(--success); }
+        .aging-bar.days30 { background: var(--info); }
+        .aging-bar.days60 { background: var(--warning); }
+        .aging-bar.days90 { background: #f97316; }
+        .aging-bar.over90 { background: var(--danger); }
+
+        .aging-amount { width: 100px; text-align: right; font-weight: 600; font-size: 13px; }
+        .aging-count { width: 50px; text-align: right; font-size: 11px; color: var(--text-secondary); }
+
+        /* Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .data-table th, .data-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table th {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            background: var(--bg-card);
+        }
+
+        .data-table tbody tr {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .data-table tbody tr:hover { background: var(--bg-card-hover); }
+
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        /* Filters */
+        .filters-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .filter-select, .filter-input {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-size: 12px;
+            min-width: 140px;
+        }
+
+        .filter-select:focus, .filter-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Status Badge */
+        .status-badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        .status-badge.current { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .status-badge.overdue { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+        .status-badge.credit { background: rgba(59, 130, 246, 0.2); color: var(--info); }
+        .status-badge.uncategorized { background: rgba(139, 92, 246, 0.2); color: var(--purple); }
+
+        /* Category Select */
+        .category-select {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .category-select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active { display: flex; }
+
+        .modal-content {
+            background: var(--bg-card);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-content.large { max-width: 1200px; }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 { font-size: 16px; font-weight: 600; }
+
+        .close-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: none;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .close-btn:hover { background: var(--danger); }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* Upload */
+        .upload-section {
+            border: 2px dashed var(--border-color);
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .upload-section:hover, .upload-section.dragover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .upload-icon { font-size: 40px; margin-bottom: 12px; }
+        .upload-text { color: var(--text-secondary); margin-bottom: 6px; font-size: 13px; }
+        .upload-hint { font-size: 11px; color: var(--text-secondary); }
+
+        #fileInput { display: none; }
+
+        /* Chart */
+        .chart-container {
+            position: relative;
+            height: 250px;
+        }
+
+        /* Region Tags */
+        .region-tag {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: 500;
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--primary);
+        }
+
+        /* Truncate */
+        .truncate {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Alert Banner */
+        .alert-banner {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid var(--warning);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-banner.success {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: var(--success);
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Tabs */
+        .tab-nav {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            padding: 12px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover { color: var(--text-primary); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+        .tab-content { display: none; padding: 16px; }
+        .tab-content.active { display: block; }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* Checkbox */
+        .checkbox-cell {
+            width: 30px;
+        }
+
+        input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        /* Notification Badge */
+        .notification-badge {
+            background: var(--danger);
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 6px;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">$</div>
+                <div>
+                    <h1>AP Finance Dashboard</h1>
+                    <p>Accounts Payable Analytics & Categorization</p>
+                </div>
+            </div>
+            <div class="header-controls">
+                <div class="refresh-indicator">
+                    <span class="refresh-dot"></span>
+                    <span>Auto-refresh: <span id="refreshCountdown">60</span>s</span>
+                </div>
+                <button class="btn btn-secondary" onclick="loadDashboardData()">Refresh</button>
+                <button class="btn btn-primary" onclick="openUploadModal()">Upload Data</button>
+                <button class="btn btn-warning" onclick="openCategorizationModal()">
+                    Categorize <span class="notification-badge" id="uncategorizedBadge">0</span>
+                </button>
+                <button class="btn btn-success" onclick="exportData()">Export CSV</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Alert Banner for Uncategorized -->
+        <div class="alert-banner" id="uncategorizedAlert" style="display: none;">
+            <span>⚠️</span>
+            <span><strong id="uncategorizedCount">0</strong> invoices need categorization.</span>
+            <button class="btn btn-warning btn-sm" onclick="openCategorizationModal()">Categorize Now</button>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card" onclick="showInvoices('all')">
+                <div class="kpi-label">Total Outstanding AP</div>
+                <div class="kpi-value" id="totalOutstanding">$0</div>
+                <div class="kpi-subtext" id="openInvoiceCount">0 open invoices</div>
+            </div>
+            <div class="kpi-card" onclick="showInvoices('overdue')">
+                <div class="kpi-label">Overdue Amount</div>
+                <div class="kpi-value negative" id="overdueAmount">$0</div>
+                <div class="kpi-subtext" id="overdueCount">0 invoices</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">DPO (Days Payable)</div>
+                <div class="kpi-value info" id="dpoValue">0</div>
+                <div class="kpi-subtext">Average days</div>
+            </div>
+            <div class="kpi-card" onclick="showInvoices('credits')">
+                <div class="kpi-label">Credits Available</div>
+                <div class="kpi-value positive" id="creditsAmount">$0</div>
+                <div class="kpi-subtext">Applied to AP</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Net AP Position</div>
+                <div class="kpi-value" id="netAP">$0</div>
+                <div class="kpi-subtext">After credits</div>
+            </div>
+            <div class="kpi-card" onclick="openCategorizationModal()">
+                <div class="kpi-label">Categorization</div>
+                <div class="kpi-value purple" id="categorizedPct">0%</div>
+                <div class="kpi-subtext" id="categorizedText">0 uncategorized</div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Category Breakdown (Erik's Main Ask) -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <span class="card-title">📊 Spend by Category</span>
+                    <div class="quick-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="openMappingModal()">Edit Mappings</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="category-grid" id="categoryGrid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aging Analysis -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">📅 AP Aging</span>
+                </div>
+                <div class="card-body">
+                    <div class="aging-bars" id="agingBars"></div>
+                </div>
+            </div>
+
+            <!-- Regional Breakdown (for global visibility) -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">🌍 Regional Breakdown</span>
+                    <button class="btn btn-secondary btn-sm" onclick="openUploadModal()">Add Region</button>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="regionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Vendors -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">🏢 Top Vendors</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-container" style="max-height: 300px;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Vendor</th>
+                                    <th>Category</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topVendorsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Trend -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">📈 Monthly Trend</span>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- All Invoices -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <span class="card-title">📋 All Invoices</span>
+                    <div class="filters-row" style="margin: 0;">
+                        <select class="filter-select" id="categoryFilter" onchange="loadInvoices()">
+                            <option value="">All Categories</option>
+                        </select>
+                        <select class="filter-select" id="regionFilter" onchange="loadInvoices()">
+                            <option value="">All Regions</option>
+                        </select>
+                        <select class="filter-select" id="agingFilter" onchange="loadInvoices()">
+                            <option value="">All Aging</option>
+                            <option value="current">Current</option>
+                            <option value="days1to30">1-30 Days</option>
+                            <option value="days31to60">31-60 Days</option>
+                            <option value="days61to90">61-90 Days</option>
+                            <option value="over90">Over 90 Days</option>
+                        </select>
+                        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px;">
+                            <input type="checkbox" id="uncategorizedOnlyFilter" onchange="loadInvoices()">
+                            Uncategorized only
+                        </label>
+                    </div>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <div class="table-container" style="max-height: 500px;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Vendor</th>
+                                    <th>Description</th>
+                                    <th>Category</th>
+                                    <th>Region</th>
+                                    <th>Days Overdue</th>
+                                    <th>Amount</th>
+                                    <th>Open Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoicesBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📤 Upload Payment Data</h2>
+                <button class="close-btn" onclick="closeModal('uploadModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 16px; color: var(--text-secondary);">
+                    Upload Excel files for different regions (Japan, Serbia, India, etc.) to get global visibility.
+                </p>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 13px;">Region Name</label>
+                    <input type="text" class="filter-input" id="uploadRegion" placeholder="e.g., Japan, Serbia, India" style="width: 100%;">
+                </div>
+                <div class="upload-section" id="uploadSection">
+                    <div class="upload-icon">📁</div>
+                    <p class="upload-text">Drag & drop your Excel file here</p>
+                    <p class="upload-hint">or click to browse (.xlsx, .xls)</p>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls">
+                </div>
+                <div id="uploadStatus" style="margin-top: 16px; text-align: center;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categorization Modal -->
+    <div class="modal" id="categorizationModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2>🏷️ Categorize Invoices</h2>
+                <button class="close-btn" onclick="closeModal('categorizationModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="tab-nav">
+                    <button class="tab-btn active" onclick="switchCategorizationTab('uncategorized')">Uncategorized Invoices</button>
+                    <button class="tab-btn" onclick="switchCategorizationTab('bulk')">Bulk Actions</button>
+                    <button class="tab-btn" onclick="switchCategorizationTab('mappings')">Vendor Mappings</button>
+                </div>
+                
+                <!-- Uncategorized Tab -->
+                <div class="tab-content active" id="uncategorizedTab">
+                    <div class="table-container" style="max-height: 400px;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th class="checkbox-cell"><input type="checkbox" id="selectAllUncategorized" onchange="toggleSelectAll()"></th>
+                                    <th>Vendor</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Category</th>
+                                </tr>
+                            </thead>
+                            <tbody id="uncategorizedBody"></tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top: 16px; display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="saveCategories()">Save Changes</button>
+                        <button class="btn btn-secondary" onclick="closeModal('categorizationModal')">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- Bulk Tab -->
+                <div class="tab-content" id="bulkTab">
+                    <p style="margin-bottom: 16px;">Apply category to all invoices matching a vendor pattern:</p>
+                    <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                        <input type="text" class="filter-input" id="bulkVendorPattern" placeholder="Vendor name pattern" style="flex: 1;">
+                        <select class="filter-select" id="bulkCategory">
+                            <option value="">Select Category</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="applyBulkCategory()">Apply</button>
+                    </div>
+                </div>
+
+                <!-- Mappings Tab -->
+                <div class="tab-content" id="mappingsTab">
+                    <p style="margin-bottom: 16px;">These mappings automatically categorize new invoices:</p>
+                    <div class="table-container" style="max-height: 300px;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Vendor Pattern</th>
+                                    <th>Category</th>
+                                    <th>Sub-Category</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mappingsBody"></tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top: 16px; display: flex; gap: 10px; align-items: center;">
+                        <input type="text" class="filter-input" id="newMappingVendor" placeholder="Vendor pattern">
+                        <select class="filter-select" id="newMappingCategory"></select>
+                        <input type="text" class="filter-input" id="newMappingSubCategory" placeholder="Sub-category (optional)">
+                        <button class="btn btn-success" onclick="addMapping()">Add Mapping</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Detail Modal -->
+    <div class="modal" id="invoiceModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🧾 Invoice Details</h2>
+                <button class="close-btn" onclick="closeModal('invoiceModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="invoiceDetailBody"></div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURATION
+        // ============================================
+        const REFRESH_INTERVAL = 60;
+        let refreshTimer = REFRESH_INTERVAL;
+        let dashboardData = null;
+        let charts = {};
+        let pendingCategoryChanges = {};
+        
+        const CATEGORIES = [
+            'Temp',
+            'Contractor (Ongoing)',
+            'Contractor (Project)',
+            'Services - Engineering',
+            'Services - Legal',
+            'Services - Finance',
+            'Services - HR',
+            'Services - IT',
+            'Services - Other',
+            'Software (Subscription)',
+            'Hardware',
+            'Inventory',
+            'Facilities',
+            'Other',
+            'Uncategorized'
+        ];
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDashboardData();
+            setupEventListeners();
+            startAutoRefresh();
+            populateCategorySelects();
+        });
+
+        function setupEventListeners() {
+            // File upload
+            const uploadSection = document.getElementById('uploadSection');
+            const fileInput = document.getElementById('fileInput');
+            
+            uploadSection.addEventListener('click', () => fileInput.click());
+            uploadSection.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadSection.classList.add('dragover');
+            });
+            uploadSection.addEventListener('dragleave', () => uploadSection.classList.remove('dragover'));
+            uploadSection.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadSection.classList.remove('dragover');
+                if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]);
+            });
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) uploadFile(e.target.files[0]);
+            });
+
+            // Close modals on background click
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) modal.classList.remove('active');
+                });
+            });
+        }
+
+        function populateCategorySelects() {
+            const selects = ['categoryFilter', 'bulkCategory', 'newMappingCategory'];
+            selects.forEach(id => {
+                const select = document.getElementById(id);
+                if (select && select.options.length <= 1) {
+                    CATEGORIES.forEach(cat => {
+                        const option = document.createElement('option');
+                        option.value = cat;
+                        option.textContent = cat;
+                        select.appendChild(option);
+                    });
+                }
+            });
+        }
+
+        // ============================================
+        // DATA LOADING
+        // ============================================
+        async function loadDashboardData() {
+            try {
+                const response = await fetch('/api/finance/dashboard');
+                dashboardData = await response.json();
+                
+                if (dashboardData.error) {
+                    console.error('Dashboard error:', dashboardData.error);
+                    return;
+                }
+
+                updateKPIs();
+                updateCategoryGrid();
+                updateAgingBars();
+                updateTopVendors();
+                updateCharts();
+                populateFilters();
+                loadInvoices();
+                updateUncategorizedAlert();
+            } catch (error) {
+                console.error('Failed to load dashboard:', error);
+            }
+        }
+
+        // ============================================
+        // FORMATTING
+        // ============================================
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
+        // ============================================
+        // KPI UPDATES
+        // ============================================
+        function updateKPIs() {
+            const kpis = dashboardData.kpis;
+            
+            document.getElementById('totalOutstanding').textContent = formatCurrency(kpis.totalOutstandingAP);
+            document.getElementById('openInvoiceCount').textContent = `${kpis.openInvoices} open invoices`;
+            
+            document.getElementById('overdueAmount').textContent = formatCurrency(kpis.totalOverdueAmount);
+            document.getElementById('overdueCount').textContent = `${kpis.overdueInvoiceCount} invoices (${kpis.overduePercentage}%)`;
+            
+            document.getElementById('dpoValue').textContent = kpis.daysPayableOutstanding;
+            document.getElementById('creditsAmount').textContent = formatCurrency(kpis.totalCredits);
+            document.getElementById('netAP').textContent = formatCurrency(kpis.netAP);
+            
+            document.getElementById('categorizedPct').textContent = `${kpis.categorizedPercentage}%`;
+            document.getElementById('categorizedText').textContent = `${kpis.uncategorizedCount} uncategorized`;
+            document.getElementById('uncategorizedBadge').textContent = kpis.uncategorizedCount;
+        }
+
+        function updateUncategorizedAlert() {
+            const count = dashboardData.kpis.uncategorizedCount;
+            const alert = document.getElementById('uncategorizedAlert');
+            
+            if (count > 0) {
+                alert.style.display = 'flex';
+                document.getElementById('uncategorizedCount').textContent = count;
+            } else {
+                alert.style.display = 'none';
+            }
+        }
+
+        // ============================================
+        // CATEGORY GRID (Erik's Main Ask)
+        // ============================================
+        function updateCategoryGrid() {
+            const categories = dashboardData.categoryBreakdown || [];
+            const grid = document.getElementById('categoryGrid');
+            
+            grid.innerHTML = categories.map(cat => `
+                <div class="category-item" onclick="filterByCategory('${cat.category}')">
+                    <div class="category-name" title="${cat.category}">${cat.category}</div>
+                    <div class="category-amount">${formatCurrency(cat.totalAmount)}</div>
+                    <div class="category-count">${cat.count} invoices</div>
+                </div>
+            `).join('');
+        }
+
+        // ============================================
+        // AGING BARS
+        // ============================================
+        function updateAgingBars() {
+            const aging = dashboardData.aging;
+            const total = Object.values(aging).reduce((sum, b) => sum + b.amount, 0);
+            
+            const bars = [
+                { label: 'Current', key: 'current', class: 'current' },
+                { label: '1-30 Days', key: 'days1to30', class: 'days30' },
+                { label: '31-60 Days', key: 'days31to60', class: 'days60' },
+                { label: '61-90 Days', key: 'days61to90', class: 'days90' },
+                { label: '90+ Days', key: 'over90', class: 'over90' }
+            ];
+
+            document.getElementById('agingBars').innerHTML = bars.map(item => {
+                const bucket = aging[item.key];
+                const pct = total > 0 ? (bucket.amount / total) * 100 : 0;
+                return `
+                    <div class="aging-bar-item" onclick="filterByAging('${item.key}')">
+                        <span class="aging-label">${item.label}</span>
+                        <div class="aging-bar-container">
+                            <div class="aging-bar ${item.class}" style="width: ${pct}%"></div>
+                        </div>
+                        <span class="aging-amount">${formatCurrency(bucket.amount)}</span>
+                        <span class="aging-count">${bucket.count}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ============================================
+        // TOP VENDORS
+        // ============================================
+        function updateTopVendors() {
+            const vendors = dashboardData.topVendors.slice(0, 10);
+            
+            document.getElementById('topVendorsBody').innerHTML = vendors.map(v => `
+                <tr onclick="filterByVendor('${v.name}')">
+                    <td class="truncate" title="${v.name}">${v.name}</td>
+                    <td><span class="status-badge ${v.category === 'Uncategorized' ? 'uncategorized' : ''}">${v.category || 'Uncategorized'}</span></td>
+                    <td style="font-weight: 600;">${formatCurrency(v.totalAmount)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // ============================================
+        // CHARTS
+        // ============================================
+        function updateCharts() {
+            Object.values(charts).forEach(c => c.destroy());
+            charts = {};
+
+            // Region Chart
+            const regions = dashboardData.regionBreakdown || [];
+            if (regions.length > 0) {
+                const ctx1 = document.getElementById('regionChart').getContext('2d');
+                charts.region = new Chart(ctx1, {
+                    type: 'doughnut',
+                    data: {
+                        labels: regions.map(r => r.region),
+                        datasets: [{
+                            data: regions.map(r => r.totalAmount),
+                            backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11 } } } }
+                    }
+                });
+            }
+
+            // Trend Chart
+            const trends = dashboardData.monthlyTrends || [];
+            if (trends.length > 0) {
+                const ctx2 = document.getElementById('trendChart').getContext('2d');
+                charts.trend = new Chart(ctx2, {
+                    type: 'line',
+                    data: {
+                        labels: trends.map(t => t.month),
+                        datasets: [{
+                            label: 'Outstanding',
+                            data: trends.map(t => t.outstandingAmount),
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+                            y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8', callback: v => formatCurrency(v) } }
+                        }
+                    }
+                });
+            }
+        }
+
+        // ============================================
+        // FILTERS
+        // ============================================
+        function populateFilters() {
+            // Category filter
+            const catFilter = document.getElementById('categoryFilter');
+            catFilter.innerHTML = '<option value="">All Categories</option>' +
+                CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+
+            // Region filter
+            const regions = dashboardData.availableRegions || [];
+            const regFilter = document.getElementById('regionFilter');
+            regFilter.innerHTML = '<option value="">All Regions</option>' +
+                regions.map(r => `<option value="${r}">${r}</option>`).join('');
+        }
+
+        function filterByCategory(category) {
+            document.getElementById('categoryFilter').value = category;
+            loadInvoices();
+        }
+
+        function filterByAging(aging) {
+            document.getElementById('agingFilter').value = aging;
+            loadInvoices();
+        }
+
+        function filterByVendor(vendor) {
+            // For now just filter by category if we can match it
+            loadInvoices();
+        }
+
+        // ============================================
+        // INVOICES
+        // ============================================
+        async function loadInvoices() {
+            const params = new URLSearchParams();
+            
+            const category = document.getElementById('categoryFilter').value;
+            const region = document.getElementById('regionFilter').value;
+            const aging = document.getElementById('agingFilter').value;
+            const uncategorizedOnly = document.getElementById('uncategorizedOnlyFilter').checked;
+
+            if (category) params.append('category', category);
+            if (region) params.append('region', region);
+            if (aging) params.append('agingBucket', aging);
+            if (uncategorizedOnly) params.append('uncategorizedOnly', 'true');
+            params.append('limit', '200');
+
+            try {
+                const response = await fetch(`/api/finance/invoices?${params}`);
+                const data = await response.json();
+                
+                document.getElementById('invoicesBody').innerHTML = data.invoices.map(inv => {
+                    let statusClass = inv.openBalance < 0 ? 'credit' : 
+                        (inv.pastDueDays > 0 ? 'overdue' : 'current');
+                    let categoryClass = (inv.category === 'Uncategorized' || !inv.category) ? 'uncategorized' : '';
+                    
+                    return `
+                        <tr onclick="showInvoiceDetail(${inv.id})">
+                            <td>${inv.date || '-'}</td>
+                            <td class="truncate" title="${inv.supplierName}">${inv.supplierName}</td>
+                            <td class="truncate" title="${inv.description || ''}">${inv.description || '-'}</td>
+                            <td><span class="status-badge ${categoryClass}">${inv.category || 'Uncategorized'}</span></td>
+                            <td><span class="region-tag">${inv.region || 'N/A'}</span></td>
+                            <td>${inv.pastDueDays || 0}</td>
+                            <td style="font-weight: 500;">${formatCurrency(inv.amount)}</td>
+                            <td class="${statusClass === 'credit' ? 'positive' : ''}">${formatCurrency(inv.openBalance)}</td>
+                        </tr>
+                    `;
+                }).join('') || '<tr><td colspan="8" style="text-align:center; padding: 30px;">No invoices found</td></tr>';
+            } catch (error) {
+                console.error('Failed to load invoices:', error);
+            }
+        }
+
+        async function showInvoiceDetail(id) {
+            try {
+                const response = await fetch(`/api/finance/invoices/${id}`);
+                const inv = await response.json();
+
+                document.getElementById('invoiceDetailBody').innerHTML = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <h4 style="margin-bottom: 12px; color: var(--text-secondary);">Invoice Info</h4>
+                            <p><strong>Date:</strong> ${inv.date}</p>
+                            <p><strong>Vendor:</strong> ${inv.supplierName}</p>
+                            <p><strong>Description:</strong> ${inv.description || '-'}</p>
+                            <p><strong>Region:</strong> ${inv.region}</p>
+                        </div>
+                        <div>
+                            <h4 style="margin-bottom: 12px; color: var(--text-secondary);">Financial</h4>
+                            <p><strong>Amount:</strong> ${formatCurrency(inv.amount)}</p>
+                            <p><strong>Open Balance:</strong> ${formatCurrency(inv.openBalance)}</p>
+                            <p><strong>Currency:</strong> ${inv.currency}</p>
+                            <p><strong>Days Overdue:</strong> ${inv.pastDueDays || 0}</p>
+                        </div>
+                        <div>
+                            <h4 style="margin-bottom: 12px; color: var(--text-secondary);">Category</h4>
+                            <select class="filter-select" id="invoiceCategory" style="width: 100%;">
+                                ${CATEGORIES.map(c => `<option value="${c}" ${inv.category === c ? 'selected' : ''}>${c}</option>`).join('')}
+                            </select>
+                            <button class="btn btn-primary" style="margin-top: 10px;" onclick="updateInvoiceCategory(${inv.id})">Update Category</button>
+                        </div>
+                        <div>
+                            <h4 style="margin-bottom: 12px; color: var(--text-secondary);">Details</h4>
+                            <p><strong>Invoice Owner:</strong> ${inv.invoiceOwner || '-'}</p>
+                            <p><strong>Payment Status:</strong> ${inv.paymentStatus || '-'}</p>
+                            <p><strong>Notes:</strong> ${inv.notes || '-'}</p>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('invoiceModal').classList.add('active');
+            } catch (error) {
+                console.error('Failed to load invoice:', error);
+            }
+        }
+
+        async function updateInvoiceCategory(id) {
+            const category = document.getElementById('invoiceCategory').value;
+            try {
+                await fetch(`/api/finance/invoices/${id}/category`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ category })
+                });
+                closeModal('invoiceModal');
+                loadDashboardData();
+            } catch (error) {
+                console.error('Failed to update category:', error);
+            }
+        }
+
+        // ============================================
+        // CATEGORIZATION MODAL
+        // ============================================
+        async function openCategorizationModal() {
+            document.getElementById('categorizationModal').classList.add('active');
+            loadUncategorizedInvoices();
+            loadMappings();
+        }
+
+        function switchCategorizationTab(tab) {
+            document.querySelectorAll('#categorizationModal .tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.toLowerCase().includes(tab));
+            });
+            document.getElementById('uncategorizedTab').classList.toggle('active', tab === 'uncategorized');
+            document.getElementById('bulkTab').classList.toggle('active', tab === 'bulk');
+            document.getElementById('mappingsTab').classList.toggle('active', tab === 'mappings');
+        }
+
+        async function loadUncategorizedInvoices() {
+            try {
+                const response = await fetch('/api/finance/invoices?uncategorizedOnly=true&limit=100');
+                const data = await response.json();
+                
+                pendingCategoryChanges = {};
+                
+                document.getElementById('uncategorizedBody').innerHTML = data.invoices.map(inv => `
+                    <tr>
+                        <td class="checkbox-cell"><input type="checkbox" class="invoice-checkbox" data-id="${inv.id}"></td>
+                        <td class="truncate" title="${inv.supplierName}">${inv.supplierName}</td>
+                        <td class="truncate" title="${inv.description || ''}">${inv.description || '-'}</td>
+                        <td>${formatCurrency(inv.amount)}</td>
+                        <td>
+                            <select class="category-select" data-id="${inv.id}" onchange="markCategoryChange(${inv.id}, this.value)">
+                                ${CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+                            </select>
+                        </td>
+                    </tr>
+                `).join('') || '<tr><td colspan="5" style="text-align:center; padding: 20px;">All invoices are categorized!</td></tr>';
+            } catch (error) {
+                console.error('Failed to load uncategorized invoices:', error);
+            }
+        }
+
+        function markCategoryChange(id, category) {
+            pendingCategoryChanges[id] = category;
+        }
+
+        function toggleSelectAll() {
+            const checked = document.getElementById('selectAllUncategorized').checked;
+            document.querySelectorAll('.invoice-checkbox').forEach(cb => cb.checked = checked);
+        }
+
+        async function saveCategories() {
+            const changes = Object.entries(pendingCategoryChanges).map(([id, category]) => ({
+                invoiceId: parseInt(id),
+                category
+            }));
+
+            if (changes.length === 0) {
+                alert('No changes to save');
+                return;
+            }
+
+            try {
+                await fetch('/api/finance/categories/bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ invoiceCategories: changes })
+                });
+                closeModal('categorizationModal');
+                loadDashboardData();
+            } catch (error) {
+                console.error('Failed to save categories:', error);
+            }
+        }
+
+        async function applyBulkCategory() {
+            const pattern = document.getElementById('bulkVendorPattern').value;
+            const category = document.getElementById('bulkCategory').value;
+
+            if (!pattern || !category) {
+                alert('Please enter both vendor pattern and category');
+                return;
+            }
+
+            try {
+                await fetch('/api/finance/mappings/vendor', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ vendor: pattern, category, subCategory: '' })
+                });
+                loadDashboardData();
+                loadMappings();
+                alert('Mapping added successfully!');
+            } catch (error) {
+                console.error('Failed to apply bulk category:', error);
+            }
+        }
+
+        async function loadMappings() {
+            try {
+                const response = await fetch('/api/finance/mappings');
+                const data = await response.json();
+                
+                document.getElementById('mappingsBody').innerHTML = data.vendorMappings.map(m => `
+                    <tr>
+                        <td>${m.vendor}</td>
+                        <td>${m.category}</td>
+                        <td>${m.subCategory || '-'}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load mappings:', error);
+            }
+        }
+
+        async function addMapping() {
+            const vendor = document.getElementById('newMappingVendor').value;
+            const category = document.getElementById('newMappingCategory').value;
+            const subCategory = document.getElementById('newMappingSubCategory').value;
+
+            if (!vendor || !category) {
+                alert('Please enter vendor pattern and category');
+                return;
+            }
+
+            try {
+                await fetch('/api/finance/mappings/vendor', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ vendor, category, subCategory })
+                });
+                document.getElementById('newMappingVendor').value = '';
+                document.getElementById('newMappingSubCategory').value = '';
+                loadMappings();
+                loadDashboardData();
+            } catch (error) {
+                console.error('Failed to add mapping:', error);
+            }
+        }
+
+        // ============================================
+        // UPLOAD
+        // ============================================
+        function openUploadModal() {
+            document.getElementById('uploadModal').classList.add('active');
+        }
+
+        async function uploadFile(file) {
+            const region = document.getElementById('uploadRegion').value || 'Uploaded';
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('region', region);
+
+            document.getElementById('uploadStatus').innerHTML = '<div class="loading"><div class="spinner"></div>Uploading...</div>';
+
+            try {
+                const response = await fetch('/api/finance/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('uploadStatus').innerHTML = `
+                        <div style="color: var(--success);">
+                            ✓ Uploaded successfully!<br>
+                            ${result.recordCount} records from ${result.region}
+                        </div>
+                    `;
+                    setTimeout(() => {
+                        closeModal('uploadModal');
+                        loadDashboardData();
+                    }, 2000);
+                } else {
+                    document.getElementById('uploadStatus').innerHTML = `
+                        <div style="color: var(--danger);">✗ Failed: ${result.error}</div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('uploadStatus').innerHTML = `
+                    <div style="color: var(--danger);">✗ Upload failed: ${error.message}</div>
+                `;
+            }
+        }
+
+        // ============================================
+        // EXPORT
+        // ============================================
+        function exportData() {
+            const category = document.getElementById('categoryFilter').value;
+            const region = document.getElementById('regionFilter').value;
+            const aging = document.getElementById('agingFilter').value;
+
+            const params = new URLSearchParams();
+            if (category) params.append('category', category);
+            if (region) params.append('region', region);
+            if (aging) params.append('agingBucket', aging);
+
+            window.location.href = `/api/finance/export?${params}`;
+        }
+
+        // ============================================
+        // UTILITY
+        // ============================================
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function showInvoices(filter) {
+            if (filter === 'overdue') {
+                document.getElementById('agingFilter').value = 'days1to30';
+            } else {
+                document.getElementById('agingFilter').value = '';
+            }
+            loadInvoices();
+        }
+
+        function openMappingModal() {
+            openCategorizationModal();
+            setTimeout(() => switchCategorizationTab('mappings'), 100);
+        }
+
+        function startAutoRefresh() {
+            setInterval(() => {
+                refreshTimer--;
+                document.getElementById('refreshCountdown').textContent = refreshTimer;
+                if (refreshTimer <= 0) {
+                    loadDashboardData();
+                    refreshTimer = REFRESH_INTERVAL;
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

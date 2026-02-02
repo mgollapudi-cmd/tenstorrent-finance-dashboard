@@ -1,0 +1,7 @@
+node_modules/
+.env
+.env.save
+uploads/
+*.log
+.DS_Store
+~$*
